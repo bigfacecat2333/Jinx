@@ -27,7 +27,7 @@ func (s *Server) Start() {
 			fmt.Println("resolve tcp addr error:", err)
 			return
 		}
-		// 2. 监听服务器的地址, listenner的作用是监听客户端的连接请求(是一个fd的列表)
+		// 2. 监听服务器的地址, listener的作用是监听客户端的连接请求(是一个socket_fd的列表)
 		listener, err := net.ListenTCP(s.IPVersion, addr)
 		if err != nil {
 			fmt.Println("listen", s.IPVersion, "err", err)
@@ -36,7 +36,7 @@ func (s *Server) Start() {
 		fmt.Println("start Jinx server succ, ", s.Name, "succ, now listening...")
 		// 3. 阻塞(区别于io复用中的阻塞, 客户端返回才会消耗cpu)的等待客户端连接，处理客户端连接业务（读写）
 		for {
-			connect, err := listener.AcceptTCP()
+			conn, err := listener.AcceptTCP()
 			if err != nil {
 				fmt.Println("Accept err", err)
 				continue
@@ -46,14 +46,14 @@ func (s *Server) Start() {
 			go func() {
 				for {
 					buf := make([]byte, 512)
-					cnt, err := connect.Read(buf)
+					cnt, err := conn.Read(buf)
 					if err != nil {
 						fmt.Println("recv buf err", err)
 						continue
 					}
 					fmt.Printf("recv client buf %s, cnt %d\n", buf, cnt)
 					// 断言
-					if _, err := connect.Write(buf[:cnt]); err != nil {
+					if _, err := conn.Write(buf[:cnt]); err != nil {
 						fmt.Println("write back buf err", err)
 						continue
 					}
@@ -65,7 +65,7 @@ func (s *Server) Start() {
 }
 
 func (s *Server) Stop() {
-
+	// 将一些服务器的资源、状态或者一些已经开辟的链接信息 进行停止或者回收
 }
 
 func (s *Server) Serve() {
@@ -75,7 +75,7 @@ func (s *Server) Serve() {
 	// TODO 做一些启动服务器之后的额外业务
 
 	// 阻塞状态
-
+	select {}
 }
 
 // NewServer 初始化Server模块的方法
@@ -84,7 +84,7 @@ func NewServer(name string) JInterface.IServer {
 		Name:      name,
 		IPVersion: "tcp4",
 		IP:        "0.0.0.0",
-		Port:      0,
+		Port:      8999,
 	}
 	return s
 }
