@@ -17,3 +17,6 @@
 
 #### 3.Jinx集成router模块
 ![集成router](/img/集成router.png)
+
+#### 4.全局配置
+![全局配置](/img/全局配置.png)

@@ -2,6 +2,7 @@ package jnet
 
 import (
 	"Jinx/jinterface"
+	"Jinx/utils"
 	"fmt"
 	"net"
 )
@@ -46,8 +47,8 @@ func (c *Connection) StartReader() {
 	defer c.Stop()
 
 	for {
-		// 读取客户端的数据到buf中，最大512字节
-		buf := make([]byte, 512)
+		// 读取客户端的数据到buf中
+		buf := make([]byte, utils.GlobalObject.MaxPackageSize)
 		_, err := c.Conn.Read(buf)
 		if err != nil {
 			fmt.Println("receive buf err ", err)
@@ -78,7 +79,7 @@ func (c *Connection) Start() {
 
 	// 1. 启动从当前链接的读数据业务
 	go c.StartReader()
-	// TODO 启动从当前链接的写数据业务
+	// TODO 启动从当前链接的写数据业务,通过router来处理
 }
 
 // Stop 停止链接 结束当前链接的工作

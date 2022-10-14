@@ -2,6 +2,7 @@ package jnet
 
 import (
 	"Jinx/jinterface"
+	"Jinx/utils"
 	"fmt"
 	"net"
 )
@@ -25,7 +26,11 @@ type Server struct {
 }
 
 func (s *Server) Start() {
-	fmt.Printf("[Start] Server Listener at IP: %s, Port: %d, is starting\n", s.IP, s.Port)
+	// 打印一下当前的server的一些信息
+	fmt.Printf("[Jinx] Server Name: %s, listenner at IP: %s, Port: %d is starting\n",
+		utils.GlobalObject.Name, utils.GlobalObject.Host, utils.GlobalObject.TcpPort)
+	fmt.Printf("[Jinx] Version: %s, MaxConn: %d, MaxPackageSize: %d\n",
+		utils.GlobalObject.Version, utils.GlobalObject.MaxConn, utils.GlobalObject.MaxPackageSize)
 
 	// 启动一个线程去做服务端的监听业务，这样就不会阻塞主线程，希望在Server()中阻塞而不是Start()中阻塞
 	go func() {
@@ -88,12 +93,12 @@ func (s *Server) AddRouter(router jinterface.IRouter) {
 }
 
 // NewServer 初始化Server模块的方法
-func NewServer(name string) jinterface.IServer {
+func NewServer() jinterface.IServer {
 	s := &Server{
-		Name:      name,
+		Name:      utils.GlobalObject.Name,
 		IPVersion: "tcp4",
-		IP:        "0.0.0.0",
-		Port:      8999,
+		IP:        utils.GlobalObject.Host,
+		Port:      utils.GlobalObject.TcpPort,
 		Router:    nil,
 	}
 	return s
