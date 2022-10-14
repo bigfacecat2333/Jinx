@@ -2,7 +2,6 @@ package jnet
 
 import (
 	"Jinx/jinterface"
-	"errors"
 	"fmt"
 	"net"
 )
@@ -11,25 +10,18 @@ import (
 type Server struct {
 	// 服务器的名称
 	Name string
+
 	// 服务器绑定的IP版本
 	IPVersion string
+
 	// 服务器监听的IP
 	IP string
+
 	// 服务器监听的端口
 	Port int
-}
 
-// CallBackToClient 定义当前客户端的连接所绑定的handle api(目前这个handle是写死的，后面会改成用户自定义的)
-func CallBackToClient(conn *net.TCPConn, data []byte, cnt int) error {
-	// 回显业务
-	fmt.Println("[Conn Handle] CallBackToClient...")
-
-	if _, err := conn.Write(data[:cnt]); err != nil {
-		fmt.Println("write back buf err", err)
-		return errors.New("CallBackToClient error")
-	}
-
-	return nil
+	// 当前的server添加一个router，server注册的链接对应的处理业务
+	Router jinterface.IRouter
 }
 
 func (s *Server) Start() {
@@ -65,7 +57,7 @@ func (s *Server) Start() {
 			}
 
 			// 将处理新连接的业务方法和conn进行绑定(封装成一个类，像一个协议一样)，得到我们的连接模块
-			dealConn := NewConnection(conn, cid, CallBackToClient)
+			dealConn := NewConnection(conn, cid, s.Router)
 			cid++
 
 			// 启动当前的连接业务处理
@@ -89,6 +81,12 @@ func (s *Server) Serve() {
 	select {}
 }
 
+// AddRouter 给当前的服务注册一个路由方法，供客户端的连接处理使用
+func (s *Server) AddRouter(router jinterface.IRouter) {
+	s.Router = router
+	fmt.Println("Add Router Success!")
+}
+
 // NewServer 初始化Server模块的方法
 func NewServer(name string) jinterface.IServer {
 	s := &Server{
@@ -96,6 +94,7 @@ func NewServer(name string) jinterface.IServer {
 		IPVersion: "tcp4",
 		IP:        "0.0.0.0",
 		Port:      8999,
+		Router:    nil,
 	}
 	return s
 }

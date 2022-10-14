@@ -2,6 +2,9 @@ package jinterface
 
 import "net"
 
+/*
+IConnection 连接接口
+*/
 type IConnection interface {
 	// Start 启动连接，让当前的连接开始工作
 	Start()
