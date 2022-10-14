@@ -1,4 +1,4 @@
-package JInterface
+package jinterface
 
 type IServer interface {
 	// Start 启动服务器

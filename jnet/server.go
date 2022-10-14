@@ -1,7 +1,8 @@
-package Net
+package jnet
 
 import (
-	"Jinx/JInterface"
+	"Jinx/jinterface"
+	"errors"
 	"fmt"
 	"net"
 )
@@ -18,22 +19,43 @@ type Server struct {
 	Port int
 }
 
+// CallBackToClient 定义当前客户端的连接所绑定的handle api(目前这个handle是写死的，后面会改成用户自定义的)
+func CallBackToClient(conn *net.TCPConn, data []byte, cnt int) error {
+	// 回显业务
+	fmt.Println("[Conn Handle] CallBackToClient...")
+
+	if _, err := conn.Write(data[:cnt]); err != nil {
+		fmt.Println("write back buf err", err)
+		return errors.New("CallBackToClient error")
+	}
+
+	return nil
+}
+
 func (s *Server) Start() {
 	fmt.Printf("[Start] Server Listener at IP: %s, Port: %d, is starting\n", s.IP, s.Port)
-	go func() { // 启动一个线程去做服务端的监听业务，这样就不会阻塞主线程，希望在Server()中阻塞而不是Start()中阻塞
+
+	// 启动一个线程去做服务端的监听业务，这样就不会阻塞主线程，希望在Server()中阻塞而不是Start()中阻塞
+	go func() {
+
 		// 1. 获取一个TCP的addr (创建一个套接字/句柄) 用于监听(localAddr) ,封装了包括bind(), inet_aton(), htons()等系统调用
 		addr, err := net.ResolveTCPAddr(s.IPVersion, fmt.Sprintf("%s:%d", s.IP, s.Port))
 		if err != nil {
 			fmt.Println("resolve tcp addr error:", err)
 			return
 		}
+
 		// 2. 监听服务器的地址, listener的作用是监听客户端的连接请求(是一个socket_fd的列表)
 		listener, err := net.ListenTCP(s.IPVersion, addr)
 		if err != nil {
 			fmt.Println("listen", s.IPVersion, "err", err)
 			return
 		}
-		fmt.Println("start Jinx server succ, ", s.Name, "succ, now listening...")
+		fmt.Println("start Jinx server success, ", s.Name, "success, now listening...")
+
+		var cid uint32
+		cid = 0
+
 		// 3. 阻塞(区别于io复用中的阻塞, 客户端返回才会消耗cpu)的等待客户端连接，处理客户端连接业务（读写）
 		for {
 			conn, err := listener.AcceptTCP()
@@ -42,23 +64,12 @@ func (s *Server) Start() {
 				continue
 			}
 
-			// 已经与客户端建立连接，做一些业务，做一个最基本的最大512字节的回显业务
-			go func() {
-				for {
-					buf := make([]byte, 512)
-					cnt, err := conn.Read(buf)
-					if err != nil {
-						fmt.Println("recv buf err", err)
-						continue
-					}
-					fmt.Printf("recv client buf %s, cnt %d\n", buf, cnt)
-					// 断言
-					if _, err := conn.Write(buf[:cnt]); err != nil {
-						fmt.Println("write back buf err", err)
-						continue
-					}
-				}
-			}()
+			// 将处理新连接的业务方法和conn进行绑定(封装成一个类，像一个协议一样)，得到我们的连接模块
+			dealConn := NewConnection(conn, cid, CallBackToClient)
+			cid++
+
+			// 启动当前的连接业务处理
+			go dealConn.Start()
 		}
 	}()
 
@@ -79,7 +90,7 @@ func (s *Server) Serve() {
 }
 
 // NewServer 初始化Server模块的方法
-func NewServer(name string) JInterface.IServer {
+func NewServer(name string) jinterface.IServer {
 	s := &Server{
 		Name:      name,
 		IPVersion: "tcp4",

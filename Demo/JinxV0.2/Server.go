@@ -8,7 +8,7 @@ import "Jinx/jnet"
 
 func main() {
 	// 1. 创建一个server句柄，使用Jinx的api
-	s := jnet.NewServer("Jinx V0.1")
+	s := jnet.NewServer("Jinx V0.2")
 	// 2. 初始化server的一些参数
 	s.Serve()
 }
