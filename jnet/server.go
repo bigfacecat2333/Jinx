@@ -21,8 +21,8 @@ type Server struct {
 	// 服务器监听的端口
 	Port int
 
-	// 当前的server添加一个router，server注册的链接对应的处理业务
-	Router jinterface.IRouter
+	// 当前server的消息管理模块，用来绑定MsgID和对应的处理业务API关系
+	MsgHandler jinterface.IMsgHandler
 }
 
 func (s *Server) Start() {
@@ -62,7 +62,7 @@ func (s *Server) Start() {
 			}
 
 			// 将处理新连接的业务方法和conn进行绑定(封装成一个类，像一个协议一样)，得到我们的连接模块
-			dealConn := NewConnection(conn, cid, s.Router)
+			dealConn := NewConnection(conn, cid, s.MsgHandler)
 			cid++
 
 			// 启动当前的连接业务处理
@@ -87,19 +87,19 @@ func (s *Server) Serve() {
 }
 
 // AddRouter 给当前的服务注册一个路由方法，供客户端的连接处理使用
-func (s *Server) AddRouter(router jinterface.IRouter) {
-	s.Router = router
+func (s *Server) AddRouter(MsgId uint32, router jinterface.IRouter) {
+	s.MsgHandler.AddRouter(MsgId, router)
 	fmt.Println("Add Router Success!")
 }
 
 // NewServer 初始化Server模块的方法
 func NewServer() jinterface.IServer {
 	s := &Server{
-		Name:      utils.GlobalObject.Name,
-		IPVersion: "tcp4",
-		IP:        utils.GlobalObject.Host,
-		Port:      utils.GlobalObject.TcpPort,
-		Router:    nil,
+		Name:       utils.GlobalObject.Name,
+		IPVersion:  "tcp4",
+		IP:         utils.GlobalObject.Host,
+		Port:       utils.GlobalObject.TcpPort,
+		MsgHandler: NewMsgHandler(),
 	}
 	return s
 }

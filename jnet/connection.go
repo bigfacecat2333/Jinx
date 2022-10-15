@@ -25,18 +25,18 @@ type Connection struct {
 	// 告知当前链接已经退出/停止的channel
 	ExitChan chan bool
 
-	// 该链接处理的方法Router
-	Router jinterface.IRouter
+	// 消息管理模块 用来绑定MsgID和对应的处理业务API(router)关系
+	MsgHandler jinterface.IMsgHandler
 }
 
 // NewConnection 初始化链接模块的方法
-func NewConnection(conn *net.TCPConn, connID uint32, router jinterface.IRouter) jinterface.IConnection {
+func NewConnection(conn *net.TCPConn, connID uint32, handler jinterface.IMsgHandler) jinterface.IConnection {
 	c := &Connection{
-		Conn:     conn,
-		ConnID:   connID,
-		isClosed: false,
-		ExitChan: make(chan bool, 1),
-		Router:   router,
+		Conn:       conn,
+		ConnID:     connID,
+		isClosed:   false,
+		ExitChan:   make(chan bool, 1),
+		MsgHandler: handler,
 	}
 	return c
 }
@@ -93,14 +93,9 @@ func (c *Connection) StartReader() {
 			msg:  msg,
 		}
 
-		// 执行注册的路由方法
-		go func(request jinterface.IRequest) {
-			c.Router.PreHandle(request)
-			c.Router.Handle(request)
-			c.Router.PostHandle(request)
-		}(&req)
-
 		// 从路由中，找到注册绑定的Conn对应的router调用
+		// 根据绑定好的MsgID 找到对应处理api业务 执行
+		go c.MsgHandler.DoMsgHandler(&req)
 	}
 }
 
