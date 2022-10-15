@@ -10,4 +10,10 @@ type IRequest interface {
 
 	// GetData 得到请求的消息数据
 	GetData() []byte
+
+	// GetMsgId 得到请求的消息ID
+	GetMsgId() uint32
+
+	// GetMsgLen 得到请求的消息长度
+	GetMsgLen() uint32
 }

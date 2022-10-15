@@ -2,8 +2,9 @@ package jnet
 
 import (
 	"Jinx/jinterface"
-	"Jinx/utils"
+	"errors"
 	"fmt"
+	"io"
 	"net"
 )
 
@@ -48,18 +49,48 @@ func (c *Connection) StartReader() {
 
 	for {
 		// 读取客户端的数据到buf中
-		buf := make([]byte, utils.GlobalObject.MaxPackageSize)
-		_, err := c.Conn.Read(buf)
+		//buf := make([]byte, utils.GlobalObject.MaxPackageSize)
+		//_, err := c.Conn.Read(buf)
+		//if err != nil {
+		//	fmt.Println("receive buf err ", err)
+		//	// 下次仍然有可能读到数据
+		//	continue
+		//}
+
+		// 创建拆包解包的对象
+		dp := NewDataPack()
+
+		// 读取客户端的Msg Head 二进制流 8字节 包括dataLen和msgID
+		headData := make([]byte, dp.GetHeadLen())
+		_, err := io.ReadFull(c.GetTCPConnection(), headData)
 		if err != nil {
-			fmt.Println("receive buf err ", err)
-			// 下次仍然有可能读到数据
-			continue
+			fmt.Println("read msg head error ", err)
+			break
+		}
+
+		// unpack,得到msgID和msgDataLen 放在msg消息中
+		msg, err := dp.Unpack(headData)
+		if err != nil {
+			fmt.Println("unpack error ", err)
+			break
+		}
+
+		// 根据dataLen 再次读取data，放在msg.Data中
+		if msg.GetMsgLen() > 0 {
+			msg.SetData(make([]byte, msg.GetMsgLen()))
+
+			// 根据dataLen从io中读取字节流
+			_, err := io.ReadFull(c.GetTCPConnection(), msg.GetData())
+			if err != nil {
+				fmt.Println("read msg data error ", err)
+				break
+			}
 		}
 
 		// 得到当前conn数据的Request请求数据(就是把数据封装到一个Request中)
 		req := Request{
 			conn: c,
-			data: buf,
+			msg:  msg,
 		}
 
 		// 执行注册的路由方法
@@ -118,7 +149,25 @@ func (c *Connection) RemoteAddr() net.Addr {
 	return c.Conn.RemoteAddr()
 }
 
-// Send 发送数据，将数据发送给远程的客户端
-func (c *Connection) Send(data []byte) error {
+// SendMsg 提供一个SendMsg方法，将我们要发送给客户端的数据，先进行封包，再发送
+func (c *Connection) SendMsg(msgID uint32, data []byte) error {
+	if c.isClosed {
+		fmt.Println("connection closed when send msg")
+		return errors.New("connection closed when send msg")
+	}
+
+	// 将data进行封包 binaryMsg = MsgDataLen | MsgID | Data
+	dp := NewDataPack()
+	binaryMsg, err := dp.Pack(NewMsgPackage(msgID, data))
+	if err != nil {
+		fmt.Println("Pack error msg id = ", msgID)
+		return errors.New("pack error msg")
+	}
+
+	_, err = c.Conn.Write(binaryMsg)
+	if err != nil {
+		fmt.Println("send msg error ", err)
+		return errors.New("send msg error")
+	}
 	return nil
 }

@@ -20,3 +20,14 @@
 
 ### V0.4:全局配置
 ![全局配置](/img/全局配置.png)
+
+### V0.5:消息封装
+
+#### 1.定于message结构
+![message结构](/img/Message.png)
+
+#### 2.解决粘包问题的封包和拆包
+![封包和拆包](/img/解决tcp粘包问题的pack&&unpack.png)
+
+#### 3.封装到jinx中
+![封装到jinx中](/img/封装到jinx中.png)
