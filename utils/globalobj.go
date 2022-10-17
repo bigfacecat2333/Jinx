@@ -19,9 +19,11 @@ type GlobalObj struct {
 	Name      string             // 当前服务器的名称
 
 	// Jinx
-	Version        string // 当前jinx框架的版本号
-	MaxConn        int    // 当前服务器主机允许的最大连接数
-	MaxPackageSize uint32 // 当前框架数据包的最大值
+	Version          string // 当前jinx框架的版本号
+	MaxConn          int    // 当前服务器主机允许的最大连接数
+	MaxPackageSize   uint32 // 当前框架数据包的最大值
+	WorkerPoolSize   uint32 // 当前框架工作池的Goroutine数量
+	MaxWorkerTaskLen uint32 // 每个worker对应的消息队列的任务的最大数量
 }
 
 // GlobalObject 定义一个全局的对外GlobalObj
@@ -45,12 +47,14 @@ func (g *GlobalObj) Reload() {
 func init() {
 	// 如果配置文件没有加载，默认的值
 	GlobalObject = &GlobalObj{
-		Name:           "JinxServerApp",
-		Version:        "V0.6",
-		TcpPort:        8999,
-		Host:           "0.0.0.0", // 监听所有网卡
-		MaxConn:        12000,
-		MaxPackageSize: 4096,
+		Name:             "JinxServerApp",
+		Version:          "V0.8",
+		TcpPort:          8999,
+		Host:             "0.0.0.0", // 监听所有网卡
+		MaxConn:          12000,
+		MaxPackageSize:   4096,
+		WorkerPoolSize:   10,
+		MaxWorkerTaskLen: 1024,
 	}
 
 	// 应该尝试从conf/jinx.json去加载一些用户自定义的参数

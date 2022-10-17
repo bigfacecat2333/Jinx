@@ -34,6 +34,8 @@ func (s *Server) Start() {
 
 	// 启动一个线程去做服务端的监听业务，这样就不会阻塞主线程，希望在Server()中阻塞而不是Start()中阻塞
 	go func() {
+		// 0 开启消息队列及Worker工作池
+		s.MsgHandler.StartWorkerPool()
 
 		// 1. 获取一个TCP的addr (创建一个套接字/句柄) 用于监听(localAddr) ,封装了包括bind(), inet_aton(), htons()等系统调用
 		addr, err := net.ResolveTCPAddr(s.IPVersion, fmt.Sprintf("%s:%d", s.IP, s.Port))
