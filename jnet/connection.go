@@ -14,6 +14,9 @@ import (
 	连接模块
 */
 type Connection struct {
+	// 当前Conn属于哪个Server
+	TcpServer jinterface.IServer
+
 	// 当前链接的socket TCP套接字
 	Conn *net.TCPConn
 
@@ -34,8 +37,9 @@ type Connection struct {
 }
 
 // NewConnection 初始化链接模块的方法
-func NewConnection(conn *net.TCPConn, connID uint32, handler jinterface.IMsgHandler) jinterface.IConnection {
+func NewConnection(TcpServer jinterface.IServer, conn *net.TCPConn, connID uint32, handler jinterface.IMsgHandler) jinterface.IConnection {
 	c := &Connection{
+		TcpServer:  TcpServer,
 		Conn:       conn,
 		ConnID:     connID,
 		isClosed:   false,
@@ -43,6 +47,10 @@ func NewConnection(conn *net.TCPConn, connID uint32, handler jinterface.IMsgHand
 		MsgHandler: handler,
 		msgChan:    make(chan []byte),
 	}
+
+	// 将conn加入到ConnManager中
+	c.TcpServer.GetConnMgr().Add(c)
+
 	return c
 }
 

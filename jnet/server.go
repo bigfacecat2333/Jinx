@@ -23,6 +23,22 @@ type Server struct {
 
 	// 当前server的消息管理模块，用来绑定MsgID和对应的处理业务API关系
 	MsgHandler jinterface.IMsgHandler
+
+	// 该server的连接管理器
+	ConnManager jinterface.IConnManager
+}
+
+// NewServer 初始化Server模块的方法
+func NewServer() jinterface.IServer {
+	s := &Server{
+		Name:        utils.GlobalObject.Name,
+		IPVersion:   "tcp4",
+		IP:          utils.GlobalObject.Host,
+		Port:        utils.GlobalObject.TcpPort,
+		MsgHandler:  NewMsgHandler(),
+		ConnManager: NewConnManager(),
+	}
+	return s
 }
 
 func (s *Server) Start() {
@@ -63,8 +79,19 @@ func (s *Server) Start() {
 				continue
 			}
 
+			// 设置最大连接个数的判断，如果超过最大连接，那么则关闭此新连接
+			if s.ConnManager.Len() > utils.GlobalObject.MaxConn {
+				// TODO 给客户端响应一个超出最大连接的错误包
+				fmt.Println("Too Many Connections MaxConn = ", utils.GlobalObject.MaxConn)
+				err := conn.Close()
+				if err != nil {
+					return
+				}
+				continue
+			}
+
 			// 将处理新连接的业务方法和conn进行绑定(封装成一个类，像一个协议一样)，得到我们的连接模块
-			dealConn := NewConnection(conn, cid, s.MsgHandler)
+			dealConn := NewConnection(s, conn, cid, s.MsgHandler)
 			cid++
 
 			// 启动当前的连接业务处理
@@ -76,6 +103,8 @@ func (s *Server) Start() {
 
 func (s *Server) Stop() {
 	// 将一些服务器的资源、状态或者一些已经开辟的链接信息 进行停止或者回收
+	fmt.Println("[STOP] Jinx server name ", s.Name)
+	s.ConnManager.ClearConn()
 }
 
 func (s *Server) Serve() {
@@ -94,14 +123,7 @@ func (s *Server) AddRouter(MsgId uint32, router jinterface.IRouter) {
 	fmt.Println("Add Router Success!")
 }
 
-// NewServer 初始化Server模块的方法
-func NewServer() jinterface.IServer {
-	s := &Server{
-		Name:       utils.GlobalObject.Name,
-		IPVersion:  "tcp4",
-		IP:         utils.GlobalObject.Host,
-		Port:       utils.GlobalObject.TcpPort,
-		MsgHandler: NewMsgHandler(),
-	}
-	return s
+// GetConnMgr 得到链接管理
+func (s *Server) GetConnMgr() jinterface.IConnManager {
+	return s.ConnManager
 }

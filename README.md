@@ -48,3 +48,4 @@
 ![消息队列](/img/queue.png)
 
 ### V0.9:链接管理机制
+![链接管理机制](/img/connmger.png)
