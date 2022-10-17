@@ -26,6 +26,12 @@ type Server struct {
 
 	// 该server的连接管理器
 	ConnManager jinterface.IConnManager
+
+	// 该server的连接创建时Hook函数 OnConnStart
+	OnConnStart func(conn jinterface.IConnection)
+
+	// 该server的连接断开时的Hook函数 OnConnStop
+	OnConnStop func(conn jinterface.IConnection)
 }
 
 // NewServer 初始化Server模块的方法
@@ -126,4 +132,30 @@ func (s *Server) AddRouter(MsgId uint32, router jinterface.IRouter) {
 // GetConnMgr 得到链接管理
 func (s *Server) GetConnMgr() jinterface.IConnManager {
 	return s.ConnManager
+}
+
+// SetOnConnStart 注册创建链接之后的钩子方法
+func (s *Server) SetOnConnStart(hookFunc func(connection jinterface.IConnection)) {
+	s.OnConnStart = hookFunc
+}
+
+// SetOnConnStop 注册销毁链接之前的钩子方法
+func (s *Server) SetOnConnStop(hookFunc func(connection jinterface.IConnection)) {
+	s.OnConnStop = hookFunc
+}
+
+// CallOnConnStart 调用创建链接之后的钩子方法
+func (s *Server) CallOnConnStart(conn jinterface.IConnection) {
+	if s.OnConnStart != nil {
+		fmt.Println("[Start] Call OnConnStart()")
+		s.OnConnStart(conn)
+	}
+}
+
+// CallOnConnStop 调用销毁链接之前的钩子方法
+func (s *Server) CallOnConnStop(conn jinterface.IConnection) {
+	if s.OnConnStop != nil {
+		fmt.Println("[Stop] Call OnConnStop()")
+		s.OnConnStop(conn)
+	}
 }

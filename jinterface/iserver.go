@@ -18,4 +18,16 @@ type IServer interface {
 
 	// GetConnMgr 得到链接管理
 	GetConnMgr() IConnManager
+
+	// SetOnConnStart 注册创建链接之后的钩子方法
+	SetOnConnStart(func(connection IConnection))
+
+	// SetOnConnStop 注册销毁链接之前的钩子方法
+	SetOnConnStop(func(connection IConnection))
+
+	// CallOnConnStart 调用创建链接之后的钩子方法
+	CallOnConnStart(connection IConnection)
+
+	// CallOnConnStop 调用销毁链接之前的钩子方法
+	CallOnConnStop(connection IConnection)
 }

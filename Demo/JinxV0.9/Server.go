@@ -42,12 +42,30 @@ func (r *HelloRouter) Handle(request jinterface.IRequest) {
 	}
 }
 
+// DoConnectionBegin 创建连接之后的Hook函数
+func DoConnectionBegin(conn jinterface.IConnection) {
+	fmt.Println("DoConnectionBegin is Called ...")
+	if err := conn.SendMsg(202, []byte("DoConnection BEGIN")); err != nil {
+		fmt.Println(err)
+		return
+	}
+}
+
+// DoConnectionStop 销毁连接之前的Hook函数
+func DoConnectionStop(conn jinterface.IConnection) {
+	fmt.Println("DoConnectionStop is Called ...")
+	fmt.Println("ConnID = ", conn.GetConnID(), " is lost...")
+}
+
 func main() {
 	// 1. 创建一个server句柄，使用Jinx的api
 	s := jnet.NewServer()
-	// 2. 给当前jinx框架添加自定义的router
+	// 2. 注册hook函数
+	s.SetOnConnStart(DoConnectionBegin)
+	s.SetOnConnStop(DoConnectionStop)
+	// 3. 给当前jinx框架添加自定义的router
 	s.AddRouter(0, &PingRouter{})
 	s.AddRouter(1, &HelloRouter{})
-	// 3. 启动server
+	// 4. 启动server
 	s.Serve()
 }

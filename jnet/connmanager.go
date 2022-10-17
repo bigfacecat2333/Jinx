@@ -3,6 +3,7 @@ package jnet
 import (
 	"Jinx/jinterface"
 	"errors"
+	"fmt"
 	"log"
 	"sync"
 )
@@ -23,10 +24,11 @@ func NewConnManager() *ConnManager {
 func (cm *ConnManager) Add(conn jinterface.IConnection) {
 	// 保护共享资源Map 加写锁
 	cm.connLock.Lock()
-	defer cm.connLock.Unlock()
 
 	// 将conn添加到ConnManager中
 	cm.connections[conn.GetConnID()] = conn
+
+	cm.connLock.Unlock()
 
 	log.Println("connection add to ConnManager successfully: conn num = ", cm.Len())
 }
@@ -34,10 +36,11 @@ func (cm *ConnManager) Add(conn jinterface.IConnection) {
 // Remove 删除链接
 func (cm *ConnManager) Remove(conn jinterface.IConnection) {
 	cm.connLock.Lock()
-	defer cm.connLock.Unlock()
 
 	// 删除连接信息
 	delete(cm.connections, conn.GetConnID())
+
+	cm.connLock.Unlock()
 
 	log.Println("connection Remove ConnID=", conn.GetConnID(), " successfully: conn num = ", cm.Len())
 }
@@ -45,33 +48,36 @@ func (cm *ConnManager) Remove(conn jinterface.IConnection) {
 // Get 根据ConnID获取链接
 func (cm *ConnManager) Get(connID uint32) (jinterface.IConnection, error) {
 	cm.connLock.RLock()
-	defer cm.connLock.RUnlock()
 
 	// 根据connID从连接中获取链接
 	if conn, ok := cm.connections[connID]; ok {
 		return conn, nil
 	} else {
+		cm.connLock.RUnlock()
 		return nil, errors.New("connection not FOUND")
 	}
 }
 
 // Len 得到当前链接总数
 func (cm *ConnManager) Len() int {
-	return len(cm.connections)
+	cm.connLock.RLock()
+
+	len := len(cm.connections)
+
+	cm.connLock.RUnlock()
+	return len
 }
 
 // ClearConn 清除并终止所有链接
 func (cm *ConnManager) ClearConn() {
 	cm.connLock.Lock()
-	defer cm.connLock.Unlock()
-
-	// 删除conn，并停止conn的工作
+	//停止并删除全部的连接信息
 	for connID, conn := range cm.connections {
 		// 停止
 		conn.Stop()
 		// 删除
 		delete(cm.connections, connID)
 	}
-
-	log.Println("Clear All Connections successfully: conn num = ", cm.Len())
+	cm.connLock.Unlock()
+	fmt.Println("Clear All Connections successfully: conn num = ", cm.Len())
 }
