@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"sync"
 )
 
 // Connection
@@ -34,6 +35,12 @@ type Connection struct {
 
 	// 消息管理模块 用来绑定MsgID和对应的处理业务API(router)关系
 	MsgHandler jinterface.IMsgHandler
+
+	// 链接属性集合
+	property map[string]interface{}
+
+	// 保护链接属性的锁
+	propertyLock sync.RWMutex
 }
 
 // NewConnection 初始化链接模块的方法
@@ -46,6 +53,7 @@ func NewConnection(TcpServer jinterface.IServer, conn *net.TCPConn, connID uint3
 		ExitChan:   make(chan bool, 1),
 		MsgHandler: handler,
 		msgChan:    make(chan []byte),
+		property:   make(map[string]interface{}),
 	}
 
 	// 将conn加入到ConnManager中
@@ -206,4 +214,30 @@ func (c *Connection) SendMsg(msgID uint32, data []byte) error {
 	// 将数据发送给管道
 	c.msgChan <- binaryMsg
 	return nil
+}
+
+// SetProperty 设置链接属性
+func (c *Connection) SetProperty(key string, value interface{}) {
+	c.propertyLock.Lock()
+	c.property[key] = value
+	c.propertyLock.Unlock()
+}
+
+// GetProperty 获取链接属性
+func (c *Connection) GetProperty(key string) (interface{}, error) {
+	c.propertyLock.RLock()
+	if value, ok := c.property[key]; ok {
+		c.propertyLock.RUnlock()
+		return value, nil
+	} else {
+		c.propertyLock.RUnlock()
+		return nil, errors.New("no property found")
+	}
+}
+
+// RemoveProperty 移除链接属性
+func (c *Connection) RemoveProperty(key string) {
+	c.propertyLock.Lock()
+	delete(c.property, key)
+	c.propertyLock.Unlock()
 }

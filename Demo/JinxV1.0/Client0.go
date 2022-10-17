@@ -12,14 +12,14 @@ import (
 模拟客户端
 */
 func main() {
-	fmt.Println("client start...")
+	fmt.Println("client0 start...")
 
 	time.Sleep(1 * time.Second)
 
 	// 1. 直接链接远程服务器，得到一个conn连接, Dial()就是C++中的Connect()的封装
 	conn, err := net.Dial("tcp", "127.0.0.1:8999")
 	if err != nil {
-		fmt.Println("client1 start err, exit!")
+		fmt.Println("client start err, exit!")
 		return
 	}
 
@@ -27,7 +27,7 @@ func main() {
 		// 发送封包的message消息
 		dp := jnet.NewDataPack()
 
-		binaryMsg, err := dp.Pack(jnet.NewMsgPackage(1, []byte("Jinx client Test Message")))
+		binaryMsg, err := dp.Pack(jnet.NewMsgPackage(0, []byte("Jinx client Test Message")))
 		if err != nil {
 			fmt.Println("Pack error err", err)
 			return
